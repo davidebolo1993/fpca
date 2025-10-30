@@ -17,7 +17,7 @@ RUN g++ --version && \
 
 # Clone your repo
 WORKDIR /opt
-RUN git clone https://github.com/davidebolo1993/fpca.git
+RUN git clone https://davidebolo1993/fpca.git
 WORKDIR /opt/fpca
 
 # Build fpca (assumes your repo contains fast_pca.cpp or CMakeLists.txt)
