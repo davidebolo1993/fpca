@@ -24,6 +24,8 @@ WORKDIR /opt/fpca
 RUN mkdir -p build
 WORKDIR /opt/fpca/build
 RUN g++ -std=c++17 -O3 -march=native -fopenmp -I/usr/include -L/usr/lib -Wl,-rpath,/usr/lib -o fpca ../fpca.cpp -larmadillo -lopenblas -llapack
+ENV PATH /opt/fpca/build:$PATH
+
 
 # Final container setup
 WORKDIR /data
