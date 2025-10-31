@@ -1,7 +1,3 @@
-// fast_pca_optimized.cpp
-// Optimized C++ implementation for gene expression PCA analysis
-// Compile: g++ -std=c++17 -O3 -march=native -fopenmp -o fpca fpca.cpp -larmadillo
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -15,7 +11,7 @@
 using namespace arma;
 using namespace std;
 
-// Structure to hold configuration
+// configuration
 struct Config {
     string input_file;
     string output_file;
@@ -27,7 +23,7 @@ struct Config {
     double max_scale = 10.0;
 };
 
-// Structure for HVG results
+// HVG results
 struct HVGResult {
     uvec hvg_indices;
     vec means;
@@ -35,7 +31,7 @@ struct HVGResult {
     vec dispersions_norm;
 };
 
-// Optimized TSV reader with memory pre-allocation
+// TSV reading
 mat read_tsv_optimized(const string& filename, vector<string>& row_names, 
                       vector<string>& col_names) {
     
@@ -44,7 +40,7 @@ mat read_tsv_optimized(const string& filename, vector<string>& row_names,
         throw runtime_error("Cannot open file: " + filename);
     }
     
-    // Read entire file into memory first (faster than line-by-line)
+    // File in memory - this we may want to change and process in chunks
     file.seekg(0, ios::end);
     size_t file_size = file.tellg();
     file.seekg(0, ios::beg);
@@ -53,7 +49,7 @@ mat read_tsv_optimized(const string& filename, vector<string>& row_names,
     file.read(&content[0], file_size);
     file.close();
     
-    // Parse content
+    // Parse
     istringstream stream(content);
     string line;
     
@@ -79,7 +75,7 @@ mat read_tsv_optimized(const string& filename, vector<string>& row_names,
     mat data(n_rows, n_cols);
     row_names.reserve(n_rows);
     
-    // Read data efficiently
+    // Reading
     size_t row_idx = 0;
     while (getline(stream, line)) {
         istringstream line_stream(line);
@@ -114,7 +110,7 @@ vector<string> read_covariates(const string& covs_file) {
     return covs;
 }
 
-// Optimized normalization - vectorized operations
+// Normalization with vectorized operations
 void normalize_total_optimized(mat& data, double target_sum) {
     vec row_sums = sum(data, 1);
     
@@ -126,12 +122,12 @@ void normalize_total_optimized(mat& data, double target_sum) {
     }
 }
 
-// Use Armadillo's built-in vectorized log1p
+// Armadillo's built-in vectorized log1p
 void log1p_transform_optimized(mat& data) {
     data = log1p(data);
 }
 
-// Optimized HVG selection with better memory management
+// HVG selection
 HVGResult select_hvg_seurat_optimized(const mat& data, int n_top_genes, int n_bins = 20) {
     uword n_genes = data.n_cols;
     
@@ -143,7 +139,7 @@ HVGResult select_hvg_seurat_optimized(const mat& data, int n_top_genes, int n_bi
     vec vars_vec = vars.t();
     vec dispersions = vars_vec / (means_vec + 1e-12);
     
-    // Optimized binning
+    // Binning
     vec mean_sorted = sort(means_vec);
     vec bin_edges(n_bins + 1);
     
@@ -156,7 +152,7 @@ HVGResult select_hvg_seurat_optimized(const mat& data, int n_top_genes, int n_bi
     
     vec dispersions_norm = zeros<vec>(n_genes);
     
-    // Process bins efficiently
+    // Bin processing
     for (int bin = 0; bin < n_bins; ++bin) {
         uvec bin_genes = find(means_vec >= bin_edges(bin) && means_vec < bin_edges(bin + 1));
         
@@ -185,9 +181,9 @@ HVGResult select_hvg_seurat_optimized(const mat& data, int n_top_genes, int n_bi
     return result;
 }
 
-// Optimized scaling with vectorized operations
+// Scaling
 void scale_data_optimized(mat& data, double max_value) {
-    // Use Armadillo's built-in standardization
+    // Armadillo's built-in standardization
     rowvec col_means = mean(data, 0);
     rowvec col_stds = stddev(data, 0, 0);
     
@@ -201,7 +197,7 @@ void scale_data_optimized(mat& data, double max_value) {
     }
 }
 
-// Optimized PCA with better SVD usage
+// PCA
 mat compute_pca_optimized(const mat& data, int n_pcs, vec& eigenvalues) {
     // Center data efficiently
     mat centered = data.each_row() - mean(data, 0);
@@ -240,7 +236,7 @@ mat compute_pca_optimized(const mat& data, int n_pcs, vec& eigenvalues) {
     }
 }
 
-// Highly optimized output writing
+// Writing
 void write_output_optimized(const string& filename, const mat& original_data,
                            const mat& pca_loadings, const mat& genotype_pcs,
                            const vector<string>& row_names, 
@@ -294,7 +290,7 @@ void write_output_optimized(const string& filename, const mat& original_data,
     file.close();
 }
 
-// Main processing function with optimizations
+// Main
 void run_pca_analysis_optimized(const Config& config) {
     cout << "Reading input data..." << endl;
     
@@ -329,7 +325,7 @@ void run_pca_analysis_optimized(const Config& config) {
         }
     }
     
-    // Extract matrices efficiently
+    // Extract matrices
     mat genotype_pcs = counts.cols(conv_to<uvec>::from(cov_indices));
     mat counts_orig = counts.cols(conv_to<uvec>::from(gene_indices));
     
@@ -374,7 +370,7 @@ void run_pca_analysis_optimized(const Config& config) {
                           genotype_pcs, row_names, gene_col_names, 
                           config.n_pcs, existing_covs);
     
-    // Write covariates file efficiently
+    // Write covariates file
     ofstream cov_file("covariates_new.txt");
     string cov_line1, cov_line2;
     for (size_t i = 0; i < existing_covs.size(); ++i) {
